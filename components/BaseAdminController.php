@@ -27,10 +27,20 @@ class BaseAdminController extends CController
 
 	/** @var string Текущая страница */
 	public $currentPage = array(
-		'model' => '<modeName>', // имя модели, если страница привязана к модели, допускается или привязка к модели или запуск действия
-		'action' => '<controllerId>/<actionId>', // или '<controllerId>/<actionId>', запускаемое действие
+		// общие параметры
 		'icon' => '<icon>', // не обязательно, иконка для меню
-		'title' => '<tite>'
+		'title' => '<tite>', // не обязательно, не показывать выбранные колонки в таблице
+
+		// ВАЖНО: страницу можно привязать к модели, ИЛИ к действию
+		// у привязок могут быть свои параметры
+
+		// привязка в действию
+		'action' => '<controllerId>/<actionId>', // привязка к действию
+
+		// привязка к модели
+		'model' => '<modeName>',
+		'ignoreColumns' => array('<attribute1>', '<attributeN>'), // не обязательно, скрыть выбранные атрибуты в таблице
+		'ignoreElements' => array('<attribute1>', '<attributeN>'),// не обязательно, скрыть выбранные атрибуты в форме
 	);
 
 	/** @var string Путь к моделям по умолчанию */
@@ -153,9 +163,12 @@ class BaseAdminController extends CController
 			switch ($column->dbType)
 			{
 				case 'text':
+				case 'mediumtext':
+				case 'longtext':
 					return self::ATTR_TYPE_TEXT;
 
 				case 'timestamp':
+				case 'datetime':
 					return self::ATTR_TYPE_DATETIME;
 			}
 		}
@@ -183,7 +196,7 @@ class BaseAdminController extends CController
 		if (isset($validators['file']))
 		{
 			$options = $validators['file'];
-			if (preg_match('/(jpg|jpeg|jpe|gif|png|bmp)[, ]?/', strtolower($options['types'])))
+			if (!empty($options['types']) && preg_match('/(jpg|jpeg|jpe|gif|png|bmp)[, ]?/', strtolower($options['types'])))
 				return self::ATTR_TYPE_IMAGE;
 
 			return self::ATTR_TYPE_FILE;
@@ -473,13 +486,6 @@ class BaseAdminController extends CController
 			case self::ATTR_TYPE_FILE:
 			case self::ATTR_TYPE_IMAGE:
 				$column = null;
-				/*
-				$column = array(
-					'type' => 'raw',
-					'name' => $attribute,
-					'value' => sprintf('$data->%1$s ? "<a class=\"btn btn-mini\" href=\"" . $data->%1$s . "\"><i class=\"icon-arrow-down\"></i>Скачать</a>" : ""', $attribute)
-				);*/
-
 				break;
 		}
 
@@ -531,7 +537,6 @@ class BaseAdminController extends CController
 			'template' => "{items}\n{pager}",
 			'filter' => $model,
 			'columns' => $columnsConfig,
-			//'htmlOptions' => array('style' => 'white-space: nowrap')
 		);
 	}
 

@@ -450,14 +450,27 @@ class BaseAdminController extends CController
 		$vars = get_class_vars(get_class($model));
 
 		if (!empty($vars['attrOptions']) && !empty($vars['attrOptions'][$attribute]))
+		{
+
 			return array(
 				'filter' => $vars['attrOptions'][$attribute],
 				'name' => $attribute,
-				'value' => sprintf('BaseAdminController::arrayGetValue(get_class_vars(get_class($data)), "attrOptions.%1$s.$data->%1$s")', $attribute)
+				'class' => 'bootstrap.widgets.TbEditableColumn',
+				'editable' => array(
+					'type' => 'select',
+					'url' => $this->createUrl('update', array('page' => $this->currentPageName, 'editable' => true)),
+					'source' => $vars['attrOptions'][$attribute],
+				),
+				'value' => sprintf(get_class($this) . '::arrayGetValue(get_class_vars(get_class($data)), "attrOptions.%1$s.$data->%1$s")', $attribute)
 			);
+		}
+
 
 		$attrType = $this->getModelAttributeType($model, $attribute, $options);
-		$column = array('name' => $attribute, 'value' => sprintf( get_class($this) . '::shorter($data->%1$s)', $attribute));
+		$column = array(
+			'name' => $attribute,
+			'value' => sprintf(get_class($this) . '::shorter($data->%1$s)', $attribute),
+		);
 
 		switch ($attrType)
 		{
@@ -478,7 +491,13 @@ class BaseAdminController extends CController
 				$column = array(
 					'filter' => array('Нет', 'Да'),
 					'name' => $attribute,
-					'value' => sprintf('is_null($data->%1$s) ? "" : ($data->%1$s ? "Да" : "Нет")', $attribute)
+					'value' => sprintf('is_null($data->%1$s) ? "" : ($data->%1$s ? "Да" : "Нет")', $attribute),
+					'class' => 'bootstrap.widgets.TbEditableColumn',
+					'editable' => array(
+						'type' => 'select',
+						'url' => $this->createUrl('update', array('page' => $this->currentPageName, 'editable' => true)),
+						'source' => array('Нет', 'Да'),
+					),
 				);
 
 				break;
@@ -606,7 +625,7 @@ class BaseAdminController extends CController
 		if (empty($this->pages))
 			throw new CHttpException(401, 'Нет доступа');
 
-		Yii::app()->errorHandler->errorAction = 'admin/error';
+		Yii::app()->errorHandler->errorAction = Yii::app()->controller->id . '/error';
 	}
 
 
@@ -676,6 +695,7 @@ class BaseAdminController extends CController
 		$this->render('list', array('model' => $model));
 	}
 
+
 	/**
 	 * Редактирование модели
 	 *
@@ -690,6 +710,15 @@ class BaseAdminController extends CController
 		$this->currentPage = $page = $this->pages[$this->currentPageName];
 
 		$modelName = $this->pages[$this->currentPageName]['model'];
+
+		// если изменили значение в ячейке таблицы
+		if (Yii::app()->request->isAjaxRequest && Yii::app()->request->getParam('editable'))
+		{
+			Yii::import('bootstrap.widgets.TbEditableSaver');
+			$es = new TbEditableSaver($modelName);
+			$es->update();
+			Yii::app()->end();
+		}
 
 		if (isset($_POST['delete']) && $id)
 		{

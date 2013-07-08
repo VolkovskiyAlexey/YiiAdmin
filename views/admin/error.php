@@ -1,9 +1,7 @@
 <?php
-/** 
- * @var $this BaseAdminController
- * @var $code string
- * @var $message string 
- */
+/* @var $this BaseAdminController */
+/* @var $code string */
+/* @var $message string */
 
 $this->pageTitle = Yii::app()->name . ' - Ошибка ' . $code;
 $this->breadcrumbs = array('Ошибка');
